@@ -1,15 +1,27 @@
 #!/bin/bash
 
-[ -z "$BASH_VERSION" ] || [ "$UID" -ne 0 ] && exec sudo /bin/bash "$0" "$@"
-
-case "$(realpath /proc/1/exe 2>/dev/null || readlink -f /proc/1/exe)" in
-    /usr/lib/systemd/systemd)
-        /usr/lib/systemd/shutdown $@
-        ;;
-    /usr/lib/sysvinit/init)
+if [ -d /run/systemd/system ]; then
+    # systemd
+    /usr/lib/systemd/shutdown $@ &
+    exit 0
+elif [ -p /run/initctl ]; then
+    # sysvinit
+    if [ "$UID" -ne 0 ]; then
+        # show "must run as root" error prompt for normal user
         /usr/lib/sysvinit/shutdown $@
-        ;;
-        *)
-        sync && sleep 3 && /usr/bin/busybox poweroff -f;
-        ;;
-esac
+    else
+        # silence systemd error message when running dual-init
+        if [ -d /run/systemd ] && [ ! -d /run/systemd/system ]; then
+            mkdir /run/systemd/system
+        fi
+        /usr/lib/sysvinit/shutdown $@ &
+        if [ -d /run/systemd/system ]; then
+            rmdir /run/systemd/system
+        fi
+    fi
+else
+    # nothing left - so try busybox
+   sleep 3
+   sudo /usr/bin/busybox reboot -f
+fi
+exit 0
