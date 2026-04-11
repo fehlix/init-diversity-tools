@@ -1,9 +1,6 @@
-#!/bin/bash
+#!/bin/sh
 
-[ -z "$BASH_VERSION" ] || [ "$UID" -ne 0 ] && exec sudo /bin/bash "$0" "$@"
-
-case "$(realpath /proc/1/exe 2>/dev/null || readlink -f /proc/1/exe)" in
-    /usr/lib/sysvinit/init)
-        [ -x /usr/lib/init/rc ] && exec /usr/lib/init/rc S
-        ;;
-esac
+if [ ! -d /run/systemd/system -a  -p /run/initctl -a -x /usr/lib/init/rc ]; then
+    exec /usr/lib/init/rc S
+fi
+exit 0

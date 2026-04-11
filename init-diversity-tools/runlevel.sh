@@ -1,13 +1,9 @@
-#!/bin/bash
+#!/bin/sh
 
-[ -z "$BASH_VERSION" ] && exec /bin/bash "$0" "$@"
+if [ -d /run/systemd/system ]; then
+    /usr/lib/systemd/runlevel $@
+elif [ -p /run/initctl ]; then
+    /usr/lib/sysvinit/runlevel $@
+fi
 
-case "$(cat /proc/1/comm)" in
-    systemd)
-        /usr/lib/systemd/runlevel $@
-        ;;
-    init)
-        /usr/lib/sysvinit/runlevel $@
-        ;;
-esac
 exit 0
